@@ -14,19 +14,8 @@
     </div>
 </div>
 
-<!-- Project Selector -->
-<div style="background-color: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: 8px; padding: 1rem 1.5rem; margin-bottom: 1.5rem;">
-    <div style="display: flex; align-items: center; gap: 1rem;">
-        <label for="projectSelector" style="margin: 0; font-weight: 500; min-width: fit-content;">📁 Current Project:</label>
-        <select id="projectSelector" onchange="changeProject(this.value)"
-                style="flex: 1; background-color: var(--bg-tertiary); color: var(--text-primary); border: 1px solid var(--border-color); padding: 0.5rem 1rem; border-radius: 6px; font-size: 1rem;">
-            <option value="">No project (all fields available)</option>
-        </select>
-    </div>
-</div>
-
 <!-- Bible Verse Banner -->
-<div id="verseBanner" style="background: linear-gradient(135deg, var(--bg-secondary) 0%, var(--bg-tertiary) 100%); border-left: 4px solid var(--accent-blue); border-radius: 8px; padding: 1rem 1.5rem; margin-bottom: 1.5rem; font-style: italic; color: var(--text-secondary);">
+<div id="verseBanner" style="background: linear-gradient(135deg, var(--bg-secondary) 0%, var(--bg-tertiary) 100%); border-radius: 8px; padding: 1rem 1.5rem; margin-bottom: 1.5rem; font-style: italic; color: var(--text-secondary);">
     <div id="verseText" style="font-size: 1rem; line-height: 1.6;"></div>
 </div>
 
@@ -154,6 +143,17 @@
 </div>
 
 <div id="manualMessage" style="margin-top: 1rem;"></div>
+
+<!-- Project Selector -->
+<div style="background-color: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: 8px; padding: 1rem 1.5rem; margin-top: 2rem;">
+    <div style="display: flex; align-items: center; gap: 1rem;">
+        <label for="projectSelector" style="margin: 0; font-weight: 500; min-width: fit-content;">📁 Current Project:</label>
+        <select id="projectSelector" onchange="changeProject(this.value)"
+                style="flex: 1; background-color: var(--bg-tertiary); color: var(--text-primary); border: 1px solid var(--border-color); padding: 0.5rem 1rem; border-radius: 6px; font-size: 1rem;">
+            <option value="">No project (all fields available)</option>
+        </select>
+    </div>
+</div>
 
 <script>
 // TIMER MODE VARIABLES
