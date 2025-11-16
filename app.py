@@ -271,47 +271,6 @@ def set_wrvu_conversion_rate():
     db.set_wrvu_conversion_rate(float(data['rate']))
     return jsonify({'success': True})
 
-# Projects API routes
-@app.route('/api/projects', methods=['GET'])
-def get_projects():
-    """Get all projects"""
-    projects = db.get_projects()
-    return jsonify(projects)
-
-@app.route('/api/projects', methods=['POST'])
-def create_project():
-    """Create a new project"""
-    data = request.json
-    project_id = db.create_project(data['name'], data.get('description'))
-    return jsonify({'id': project_id, 'success': True})
-
-@app.route('/api/projects/<int:project_id>', methods=['PUT'])
-def update_project(project_id):
-    """Update a project"""
-    data = request.json
-    db.update_project(project_id, data['name'], data.get('description'))
-    return jsonify({'success': True})
-
-@app.route('/api/projects/<int:project_id>', methods=['DELETE'])
-def delete_project(project_id):
-    """Delete a project"""
-    db.delete_project(project_id)
-    return jsonify({'success': True})
-
-@app.route('/api/projects/<int:project_id>/custom-fields', methods=['GET'])
-def get_project_custom_fields(project_id):
-    """Get custom fields for a specific project"""
-    fields = db.get_custom_fields_for_project(project_id if project_id != 0 else None)
-    return jsonify(fields)
-
-@app.route('/api/custom-fields/<int:field_id>/link-project', methods=['POST'])
-def link_custom_field_to_project(field_id):
-    """Link a custom field to a project"""
-    data = request.json
-    project_id = data.get('project_id')
-    db.link_custom_field_to_project(field_id, project_id)
-    return jsonify({'success': True})
-
 @app.route('/api/export')
 def export_data():
     """Export data to Excel"""

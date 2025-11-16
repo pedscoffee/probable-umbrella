@@ -89,31 +89,9 @@ class Database:
             )
         ''')
 
-        # Projects table
-        cursor.execute('''
-            CREATE TABLE IF NOT EXISTS projects (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                name TEXT NOT NULL UNIQUE,
-                description TEXT,
-                created_at TEXT DEFAULT CURRENT_TIMESTAMP
-            )
-        ''')
-
         # Add day_of_week column to existing visits table if it doesn't exist
         try:
             cursor.execute('ALTER TABLE visits ADD COLUMN day_of_week TEXT')
-        except sqlite3.OperationalError:
-            pass  # Column already exists
-
-        # Add project_id column to custom_fields table if it doesn't exist
-        try:
-            cursor.execute('ALTER TABLE custom_fields ADD COLUMN project_id INTEGER REFERENCES projects(id)')
-        except sqlite3.OperationalError:
-            pass  # Column already exists
-
-        # Add project_id column to visits table if it doesn't exist
-        try:
-            cursor.execute('ALTER TABLE visits ADD COLUMN project_id INTEGER REFERENCES projects(id)')
         except sqlite3.OperationalError:
             pass  # Column already exists
 
@@ -264,85 +242,6 @@ class Database:
         conn = self.get_connection()
         cursor = conn.cursor()
         cursor.execute('DELETE FROM custom_fields WHERE id = ?', (field_id,))
-        conn.commit()
-        conn.close()
-
-    # Project operations
-    def get_projects(self) -> List[Dict]:
-        """Get all projects"""
-        conn = self.get_connection()
-        cursor = conn.cursor()
-        cursor.execute('SELECT * FROM projects ORDER BY name')
-        projects = [dict(row) for row in cursor.fetchall()]
-        conn.close()
-        return projects
-
-    def create_project(self, name: str, description: Optional[str] = None) -> int:
-        """Create a new project"""
-        conn = self.get_connection()
-        cursor = conn.cursor()
-        cursor.execute('''
-            INSERT INTO projects (name, description)
-            VALUES (?, ?)
-        ''', (name, description))
-        project_id = cursor.lastrowid
-        conn.commit()
-        conn.close()
-        return project_id
-
-    def update_project(self, project_id: int, name: str, description: Optional[str] = None):
-        """Update a project"""
-        conn = self.get_connection()
-        cursor = conn.cursor()
-        cursor.execute('''
-            UPDATE projects
-            SET name = ?, description = ?
-            WHERE id = ?
-        ''', (name, description, project_id))
-        conn.commit()
-        conn.close()
-
-    def delete_project(self, project_id: int):
-        """Delete a project and unlink its custom fields"""
-        conn = self.get_connection()
-        cursor = conn.cursor()
-
-        # Unlink custom fields from this project
-        cursor.execute('UPDATE custom_fields SET project_id = NULL WHERE project_id = ?', (project_id,))
-
-        # Unlink visits from this project
-        cursor.execute('UPDATE visits SET project_id = NULL WHERE project_id = ?', (project_id,))
-
-        # Delete the project
-        cursor.execute('DELETE FROM projects WHERE id = ?', (project_id,))
-
-        conn.commit()
-        conn.close()
-
-    def get_custom_fields_for_project(self, project_id: Optional[int] = None) -> List[Dict]:
-        """Get custom fields for a specific project, or fields with no project if project_id is None"""
-        conn = self.get_connection()
-        cursor = conn.cursor()
-
-        if project_id is None:
-            cursor.execute('SELECT * FROM custom_fields WHERE project_id IS NULL ORDER BY id')
-        else:
-            cursor.execute('SELECT * FROM custom_fields WHERE project_id = ? ORDER BY id', (project_id,))
-
-        fields = []
-        for row in cursor.fetchall():
-            field = dict(row)
-            field['options'] = json.loads(field['options']) if field['options'] else None
-            fields.append(field)
-
-        conn.close()
-        return fields
-
-    def link_custom_field_to_project(self, field_id: int, project_id: Optional[int]):
-        """Link a custom field to a project (or unlink if project_id is None)"""
-        conn = self.get_connection()
-        cursor = conn.cursor()
-        cursor.execute('UPDATE custom_fields SET project_id = ? WHERE id = ?', (project_id, field_id))
         conn.commit()
         conn.close()
 
