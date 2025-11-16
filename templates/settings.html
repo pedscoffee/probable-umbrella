@@ -103,8 +103,18 @@ let customFields = [];
 
 // Load projects and custom fields on page load
 async function loadProjects() {
-    const response = await fetch('/api/projects');
-    projects = await response.json();
+    try {
+        const response = await fetch('/api/projects');
+        if (response.ok) {
+            projects = await response.json();
+        } else {
+            console.log('Projects API not available');
+            projects = [];
+        }
+    } catch (error) {
+        console.log('Projects feature not available:', error);
+        projects = [];
+    }
     renderProjects();
 }
 
@@ -185,20 +195,24 @@ async function addProject() {
         return;
     }
 
-    const response = await fetch('/api/projects', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, description: description || null })
-    });
+    try {
+        const response = await fetch('/api/projects', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ name, description: description || null })
+        });
 
-    if (response.ok) {
-        document.getElementById('projectName').value = '';
-        document.getElementById('projectDescription').value = '';
-        await loadProjects();
-        await loadCustomFields(); // Reload to update project dropdown
-    } else {
-        const error = await response.json();
-        alert('Error adding project: ' + (error.message || 'Unknown error'));
+        if (response.ok) {
+            document.getElementById('projectName').value = '';
+            document.getElementById('projectDescription').value = '';
+            await loadProjects();
+            await loadCustomFields(); // Reload to update project dropdown
+        } else {
+            alert('Projects feature is not available. Please check your server.');
+        }
+    } catch (error) {
+        alert('Projects feature is not available. Please check your server.');
+        console.log('Error adding project:', error);
     }
 }
 
@@ -211,20 +225,25 @@ async function editProject(projectId) {
 
     const newDescription = prompt('Enter new description (optional):', project.description || '');
 
-    const response = await fetch(`/api/projects/${projectId}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-            name: newName.trim(),
-            description: newDescription.trim() || null
-        })
-    });
+    try {
+        const response = await fetch(`/api/projects/${projectId}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                name: newName.trim(),
+                description: newDescription.trim() || null
+            })
+        });
 
-    if (response.ok) {
-        await loadProjects();
-        await loadCustomFields(); // Reload to update project names in custom fields
-    } else {
-        alert('Error updating project');
+        if (response.ok) {
+            await loadProjects();
+            await loadCustomFields(); // Reload to update project names in custom fields
+        } else {
+            alert('Error updating project');
+        }
+    } catch (error) {
+        alert('Projects feature is not available');
+        console.log('Error editing project:', error);
     }
 }
 
@@ -234,31 +253,41 @@ async function deleteProject(projectId) {
         return;
     }
 
-    const response = await fetch(`/api/projects/${projectId}`, {
-        method: 'DELETE'
-    });
+    try {
+        const response = await fetch(`/api/projects/${projectId}`, {
+            method: 'DELETE'
+        });
 
-    if (response.ok) {
-        await loadProjects();
-        await loadCustomFields(); // Reload to update project associations
-    } else {
-        alert('Error deleting project');
+        if (response.ok) {
+            await loadProjects();
+            await loadCustomFields(); // Reload to update project associations
+        } else {
+            alert('Error deleting project');
+        }
+    } catch (error) {
+        alert('Projects feature is not available');
+        console.log('Error deleting project:', error);
     }
 }
 
 async function linkFieldToProject(fieldId, projectId) {
-    const response = await fetch(`/api/custom-fields/${fieldId}/link-project`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-            project_id: projectId ? parseInt(projectId) : null
-        })
-    });
+    try {
+        const response = await fetch(`/api/custom-fields/${fieldId}/link-project`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                project_id: projectId ? parseInt(projectId) : null
+            })
+        });
 
-    if (response.ok) {
-        await loadCustomFields(); // Reload to show updated association
-    } else {
-        alert('Error linking field to project');
+        if (response.ok) {
+            await loadCustomFields(); // Reload to show updated association
+        } else {
+            alert('Error linking field to project');
+        }
+    } catch (error) {
+        alert('Projects feature is not available');
+        console.log('Error linking field to project:', error);
     }
 }
 
