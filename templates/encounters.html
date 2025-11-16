@@ -173,16 +173,24 @@ const WELL_VISIT_CODES = ['99381', '99382', '99383', '99384', '99385', '99391', 
 
 // Load projects and populate selector
 async function loadProjectSelector() {
-    const response = await fetch('/api/projects');
-    projects = await response.json();
+    try {
+        const response = await fetch('/api/projects');
+        if (!response.ok) {
+            console.log('Projects API not available, continuing without projects');
+            return;
+        }
+        projects = await response.json();
 
-    const selector = document.getElementById('projectSelector');
-    projects.forEach(project => {
-        const option = document.createElement('option');
-        option.value = project.id;
-        option.textContent = project.name;
-        selector.appendChild(option);
-    });
+        const selector = document.getElementById('projectSelector');
+        projects.forEach(project => {
+            const option = document.createElement('option');
+            option.value = project.id;
+            option.textContent = project.name;
+            selector.appendChild(option);
+        });
+    } catch (error) {
+        console.log('Projects feature not available:', error);
+    }
 }
 
 // Change current project
@@ -432,12 +440,31 @@ function updateManualVisitTypeIndicator() {
 // Load custom fields (timer mode)
 async function loadCustomFields() {
     // Get fields for current project or all fields if no project selected
-    const url = currentProjectId
-        ? `/api/projects/${currentProjectId}/custom-fields`
-        : '/api/projects/0/custom-fields'; // 0 means no project
+    let fields = [];
 
-    const response = await fetch(url);
-    const fields = await response.json();
+    try {
+        const url = currentProjectId
+            ? `/api/projects/${currentProjectId}/custom-fields`
+            : '/api/projects/0/custom-fields'; // 0 means no project
+
+        const response = await fetch(url);
+        if (response.ok) {
+            fields = await response.json();
+        } else {
+            // Fallback to non-project API if projects not available
+            const fallbackResponse = await fetch('/api/custom-fields');
+            fields = await fallbackResponse.json();
+        }
+    } catch (error) {
+        // Fallback to non-project API if projects not available
+        try {
+            const fallbackResponse = await fetch('/api/custom-fields');
+            fields = await fallbackResponse.json();
+        } catch (fallbackError) {
+            console.log('Could not load custom fields:', fallbackError);
+            fields = [];
+        }
+    }
 
     const container = document.getElementById('customFieldsContainer');
     container.innerHTML = '';
@@ -492,12 +519,31 @@ async function loadCustomFields() {
 // Load custom fields (manual entry mode)
 async function loadManualCustomFields() {
     // Get fields for current project or all fields if no project selected
-    const url = currentProjectId
-        ? `/api/projects/${currentProjectId}/custom-fields`
-        : '/api/projects/0/custom-fields'; // 0 means no project
+    let fields = [];
 
-    const response = await fetch(url);
-    const fields = await response.json();
+    try {
+        const url = currentProjectId
+            ? `/api/projects/${currentProjectId}/custom-fields`
+            : '/api/projects/0/custom-fields'; // 0 means no project
+
+        const response = await fetch(url);
+        if (response.ok) {
+            fields = await response.json();
+        } else {
+            // Fallback to non-project API if projects not available
+            const fallbackResponse = await fetch('/api/custom-fields');
+            fields = await fallbackResponse.json();
+        }
+    } catch (error) {
+        // Fallback to non-project API if projects not available
+        try {
+            const fallbackResponse = await fetch('/api/custom-fields');
+            fields = await fallbackResponse.json();
+        } catch (fallbackError) {
+            console.log('Could not load custom fields:', fallbackError);
+            fields = [];
+        }
+    }
 
     const container = document.getElementById('manualCustomFieldsContainer');
     container.innerHTML = '';
