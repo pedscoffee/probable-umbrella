@@ -32,7 +32,7 @@ class Database:
         self.init_db()
 
     def get_connection(self):
-        conn = sqlite3.connect(self.db_path)
+        conn = sqlite3.connect(self.db_path, timeout=10.0)
         conn.row_factory = sqlite3.Row
         return conn
 
@@ -117,20 +117,24 @@ class Database:
         else:
             day_of_week = None
 
+        # Provide empty string for start_time if None (to satisfy NOT NULL constraint)
+        start_time = visit_data.get('start_time') or ''
+
         cursor.execute('''
             INSERT INTO visits (date, start_time, end_time, active_duration,
-                              visit_type, billing_code, comments, custom_fields, day_of_week)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                              visit_type, billing_code, comments, custom_fields, day_of_week, project_id)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         ''', (
             visit_data.get('date'),
-            visit_data.get('start_time'),
+            start_time,
             visit_data.get('end_time'),
             visit_data.get('active_duration', 0),
             visit_data.get('visit_type'),
             visit_data.get('billing_code'),
             visit_data.get('comments'),
             json.dumps(visit_data.get('custom_fields', {})),
-            day_of_week
+            day_of_week,
+            visit_data.get('project_id')
         ))
 
         visit_id = cursor.lastrowid
