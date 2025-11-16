@@ -4,7 +4,7 @@
 {% block nav_timer %}active{% endblock %}
 
 {% block content %}
-<div class="encounters-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+<div class="encounters-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
     <h1>Encounters</h1>
     <div class="auto-start-toggle" style="display: flex; align-items: center; gap: 1rem;">
         <label style="margin: 0; display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
@@ -144,17 +144,6 @@
 
 <div id="manualMessage" style="margin-top: 1rem;"></div>
 
-<!-- Project Selector -->
-<div style="background-color: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: 8px; padding: 1rem 1.5rem; margin-top: 2rem;">
-    <div style="display: flex; align-items: center; gap: 1rem;">
-        <label for="projectSelector" style="margin: 0; font-weight: 500; min-width: fit-content;">📁 Current Project:</label>
-        <select id="projectSelector" onchange="changeProject(this.value)"
-                style="flex: 1; background-color: var(--bg-tertiary); color: var(--text-primary); border: 1px solid var(--border-color); padding: 0.5rem 1rem; border-radius: 6px; font-size: 1rem;">
-            <option value="">No project (all fields available)</option>
-        </select>
-    </div>
-</div>
-
 <script>
 // TIMER MODE VARIABLES
 let timerInterval = null;
@@ -164,42 +153,8 @@ let totalPausedDuration = 0;
 let isPaused = false;
 let encounterNumber = 0;
 
-// PROJECT VARIABLES
-let currentProjectId = null;
-let projects = [];
-
 // Well visit codes for detection
 const WELL_VISIT_CODES = ['99381', '99382', '99383', '99384', '99385', '99391', '99392', '99393', '99394', '99395'];
-
-// Load projects and populate selector
-async function loadProjectSelector() {
-    try {
-        const response = await fetch('/api/projects');
-        if (!response.ok) {
-            console.log('Projects API not available, continuing without projects');
-            return;
-        }
-        projects = await response.json();
-
-        const selector = document.getElementById('projectSelector');
-        projects.forEach(project => {
-            const option = document.createElement('option');
-            option.value = project.id;
-            option.textContent = project.name;
-            selector.appendChild(option);
-        });
-    } catch (error) {
-        console.log('Projects feature not available:', error);
-    }
-}
-
-// Change current project
-function changeProject(projectId) {
-    currentProjectId = projectId ? parseInt(projectId) : null;
-    // Reload custom fields for both timer and manual entry modes
-    loadCustomFields();
-    loadManualCustomFields();
-}
 
 // Load encounter number from today's visits
 async function loadEncounterNumber() {
@@ -439,32 +394,8 @@ function updateManualVisitTypeIndicator() {
 
 // Load custom fields (timer mode)
 async function loadCustomFields() {
-    // Get fields for current project or all fields if no project selected
-    let fields = [];
-
-    try {
-        const url = currentProjectId
-            ? `/api/projects/${currentProjectId}/custom-fields`
-            : '/api/projects/0/custom-fields'; // 0 means no project
-
-        const response = await fetch(url);
-        if (response.ok) {
-            fields = await response.json();
-        } else {
-            // Fallback to non-project API if projects not available
-            const fallbackResponse = await fetch('/api/custom-fields');
-            fields = await fallbackResponse.json();
-        }
-    } catch (error) {
-        // Fallback to non-project API if projects not available
-        try {
-            const fallbackResponse = await fetch('/api/custom-fields');
-            fields = await fallbackResponse.json();
-        } catch (fallbackError) {
-            console.log('Could not load custom fields:', fallbackError);
-            fields = [];
-        }
-    }
+    const response = await fetch('/api/custom-fields');
+    const fields = await response.json();
 
     const container = document.getElementById('customFieldsContainer');
     container.innerHTML = '';
@@ -518,32 +449,8 @@ async function loadCustomFields() {
 
 // Load custom fields (manual entry mode)
 async function loadManualCustomFields() {
-    // Get fields for current project or all fields if no project selected
-    let fields = [];
-
-    try {
-        const url = currentProjectId
-            ? `/api/projects/${currentProjectId}/custom-fields`
-            : '/api/projects/0/custom-fields'; // 0 means no project
-
-        const response = await fetch(url);
-        if (response.ok) {
-            fields = await response.json();
-        } else {
-            // Fallback to non-project API if projects not available
-            const fallbackResponse = await fetch('/api/custom-fields');
-            fields = await fallbackResponse.json();
-        }
-    } catch (error) {
-        // Fallback to non-project API if projects not available
-        try {
-            const fallbackResponse = await fetch('/api/custom-fields');
-            fields = await fallbackResponse.json();
-        } catch (fallbackError) {
-            console.log('Could not load custom fields:', fallbackError);
-            fields = [];
-        }
-    }
+    const response = await fetch('/api/custom-fields');
+    const fields = await response.json();
 
     const container = document.getElementById('manualCustomFieldsContainer');
     container.innerHTML = '';
@@ -818,8 +725,7 @@ async function saveTimerVisit() {
         visit_type: visitType,
         billing_code: billingCode,
         comments: comments,
-        custom_fields: customFields,
-        project_id: currentProjectId
+        custom_fields: customFields
     };
 
     const response = await fetch('/api/visit', {
@@ -914,8 +820,7 @@ async function saveManualVisit() {
         visit_type: visitType,
         billing_code: billingCode,
         comments: comments,
-        custom_fields: customFields,
-        project_id: currentProjectId
+        custom_fields: customFields
     };
 
     const response = await fetch('/api/visit', {
@@ -1034,7 +939,6 @@ function displayRandomVerse() {
 }
 
 // Initialize
-loadProjectSelector();
 loadEncounterNumber();
 loadBillingCodes();
 loadManualBillingCodes();

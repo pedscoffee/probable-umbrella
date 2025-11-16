@@ -25,40 +25,31 @@
     </div>
 </div>
 
-<!-- Projects Section -->
-<div class="settings-section">
-    <h2>Projects</h2>
-    <p class="text-muted mb-3">Organize your work into projects. Each project can have its own set of custom fields.</p>
-
-    <!-- Existing Projects -->
-    <div id="projectsList"></div>
-
-    <!-- Add New Project Form -->
-    <div class="visit-form mt-4">
-        <h3 class="mb-3">Add New Project</h3>
-
-        <div class="form-group mb-3">
-            <label for="projectName">Project Name</label>
-            <input type="text" id="projectName" placeholder="e.g., Research Study, Quality Improvement">
-        </div>
-
-        <div class="form-group mb-3">
-            <label for="projectDescription">Description (optional)</label>
-            <textarea id="projectDescription" placeholder="Brief description of this project..." style="min-height: 80px;"></textarea>
-        </div>
-
-        <div style="text-align: center;">
-            <button class="btn btn-success" onclick="addProject()">Add Project</button>
-        </div>
-    </div>
-</div>
-
 <div class="settings-section">
     <h2>Custom Fields</h2>
     <p class="text-muted mb-3">Add custom fields to track additional data with each visit</p>
 
     <!-- Existing Custom Fields -->
-    <div id="customFieldsList"></div>
+    <div id="customFieldsList">
+        {% if custom_fields %}
+            {% for field in custom_fields %}
+            <div class="custom-field-item" id="field-{{ field.id }}">
+                <div class="custom-field-info">
+                    <div class="custom-field-name">{{ field.field_name }}</div>
+                    <div class="custom-field-type">
+                        Type: {{ field.field_type }}
+                        {% if field.options %}
+                        | Options: {{ field.options | join(', ') }}
+                        {% endif %}
+                    </div>
+                </div>
+                <button class="btn btn-danger" onclick="deleteField({{ field.id }})">Delete</button>
+            </div>
+            {% endfor %}
+        {% else %}
+            <p class="text-muted" style="text-align: center; padding: 2rem;">No custom fields defined yet</p>
+        {% endif %}
+    </div>
 
     <!-- Add New Custom Field Form -->
     <div class="visit-form mt-4">
@@ -98,203 +89,6 @@
 </div>
 
 <script>
-let projects = [];
-let customFields = [];
-
-// Load projects and custom fields on page load
-async function loadProjects() {
-    try {
-        const response = await fetch('/api/projects');
-        if (response.ok) {
-            projects = await response.json();
-        } else {
-            console.log('Projects API not available');
-            projects = [];
-        }
-    } catch (error) {
-        console.log('Projects feature not available:', error);
-        projects = [];
-    }
-    renderProjects();
-}
-
-async function loadCustomFields() {
-    const response = await fetch('/api/custom-fields');
-    customFields = await response.json();
-    renderCustomFields();
-}
-
-function renderProjects() {
-    const projectsList = document.getElementById('projectsList');
-
-    if (projects.length === 0) {
-        projectsList.innerHTML = '<p class="text-muted" style="text-align: center; padding: 2rem;">No projects defined yet</p>';
-        return;
-    }
-
-    projectsList.innerHTML = projects.map(project => `
-        <div class="custom-field-item" id="project-${project.id}">
-            <div class="custom-field-info">
-                <div class="custom-field-name">${project.name}</div>
-                <div class="custom-field-type">${project.description || 'No description'}</div>
-            </div>
-            <div style="display: flex; gap: 0.5rem;">
-                <button class="btn btn-secondary" onclick="editProject(${project.id})">Edit</button>
-                <button class="btn btn-danger" onclick="deleteProject(${project.id})">Delete</button>
-            </div>
-        </div>
-    `).join('');
-}
-
-function renderCustomFields() {
-    const customFieldsList = document.getElementById('customFieldsList');
-
-    if (customFields.length === 0) {
-        customFieldsList.innerHTML = '<p class="text-muted" style="text-align: center; padding: 2rem;">No custom fields defined yet</p>';
-        return;
-    }
-
-    customFieldsList.innerHTML = customFields.map(field => {
-        const projectName = field.project_id ?
-            (projects.find(p => p.id === field.project_id)?.name || 'Unknown Project') :
-            'No project (available to all)';
-
-        return `
-            <div class="custom-field-item" id="field-${field.id}">
-                <div class="custom-field-info">
-                    <div class="custom-field-name">${field.field_name}</div>
-                    <div class="custom-field-type">
-                        Type: ${field.field_type}
-                        ${field.options ? `| Options: ${field.options.join(', ')}` : ''}
-                    </div>
-                    <div style="font-size: 0.9rem; color: var(--text-secondary); margin-top: 0.25rem;">
-                        📁 ${projectName}
-                    </div>
-                </div>
-                <div style="display: flex; gap: 0.5rem; flex-direction: column;">
-                    <select onchange="linkFieldToProject(${field.id}, this.value)"
-                            style="background-color: var(--bg-tertiary); color: var(--text-primary); border: 1px solid var(--border-color); padding: 0.5rem; border-radius: 4px; font-size: 0.9rem;">
-                        <option value="">No project</option>
-                        ${projects.map(p => `
-                            <option value="${p.id}" ${field.project_id === p.id ? 'selected' : ''}>${p.name}</option>
-                        `).join('')}
-                    </select>
-                    <button class="btn btn-danger" onclick="deleteField(${field.id})">Delete</button>
-                </div>
-            </div>
-        `;
-    }).join('');
-}
-
-async function addProject() {
-    const name = document.getElementById('projectName').value.trim();
-    const description = document.getElementById('projectDescription').value.trim();
-
-    if (!name) {
-        alert('Please enter a project name');
-        return;
-    }
-
-    try {
-        const response = await fetch('/api/projects', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ name, description: description || null })
-        });
-
-        if (response.ok) {
-            document.getElementById('projectName').value = '';
-            document.getElementById('projectDescription').value = '';
-            await loadProjects();
-            await loadCustomFields(); // Reload to update project dropdown
-        } else {
-            alert('Projects feature is not available. Please check your server.');
-        }
-    } catch (error) {
-        alert('Projects feature is not available. Please check your server.');
-        console.log('Error adding project:', error);
-    }
-}
-
-async function editProject(projectId) {
-    const project = projects.find(p => p.id === projectId);
-    if (!project) return;
-
-    const newName = prompt('Enter new project name:', project.name);
-    if (!newName || newName.trim() === '') return;
-
-    const newDescription = prompt('Enter new description (optional):', project.description || '');
-
-    try {
-        const response = await fetch(`/api/projects/${projectId}`, {
-            method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                name: newName.trim(),
-                description: newDescription.trim() || null
-            })
-        });
-
-        if (response.ok) {
-            await loadProjects();
-            await loadCustomFields(); // Reload to update project names in custom fields
-        } else {
-            alert('Error updating project');
-        }
-    } catch (error) {
-        alert('Projects feature is not available');
-        console.log('Error editing project:', error);
-    }
-}
-
-async function deleteProject(projectId) {
-    const project = projects.find(p => p.id === projectId);
-    if (!confirm(`Are you sure you want to delete project "${project.name}"? Custom fields linked to this project will become unlinked.`)) {
-        return;
-    }
-
-    try {
-        const response = await fetch(`/api/projects/${projectId}`, {
-            method: 'DELETE'
-        });
-
-        if (response.ok) {
-            await loadProjects();
-            await loadCustomFields(); // Reload to update project associations
-        } else {
-            alert('Error deleting project');
-        }
-    } catch (error) {
-        alert('Projects feature is not available');
-        console.log('Error deleting project:', error);
-    }
-}
-
-async function linkFieldToProject(fieldId, projectId) {
-    try {
-        const response = await fetch(`/api/custom-fields/${fieldId}/link-project`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                project_id: projectId ? parseInt(projectId) : null
-            })
-        });
-
-        if (response.ok) {
-            await loadCustomFields(); // Reload to show updated association
-        } else {
-            alert('Error linking field to project');
-        }
-    } catch (error) {
-        alert('Projects feature is not available');
-        console.log('Error linking field to project:', error);
-    }
-}
-
-// Initialize
-loadProjects();
-loadCustomFields();
-
 async function saveConversionRate() {
     const rate = document.getElementById('conversionRate').value;
     const messageDiv = document.getElementById('conversionRateMessage');
@@ -371,14 +165,7 @@ async function addCustomField() {
     });
 
     if (response.ok) {
-        // Clear form
-        document.getElementById('fieldName').value = '';
-        document.getElementById('fieldType').value = '';
-        document.getElementById('fieldOptions').value = '';
-        document.getElementById('optionsGroup').style.display = 'none';
-
-        // Reload custom fields
-        await loadCustomFields();
+        location.reload();
     } else {
         const error = await response.json();
         alert('Error adding custom field: ' + (error.message || 'Unknown error'));
@@ -395,7 +182,13 @@ async function deleteField(fieldId) {
     });
 
     if (response.ok) {
-        await loadCustomFields(); // Reload to show updated list
+        document.getElementById(`field-${fieldId}`).remove();
+
+        // Check if there are any fields left
+        const fieldsList = document.getElementById('customFieldsList');
+        if (fieldsList.children.length === 0) {
+            fieldsList.innerHTML = '<p class="text-muted" style="text-align: center; padding: 2rem;">No custom fields defined yet</p>';
+        }
     } else {
         alert('Error deleting custom field. Please try again.');
     }
